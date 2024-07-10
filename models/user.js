@@ -88,7 +88,7 @@ module.exports = {
       });
   },
 
-  validatePassword: (req, res, email, password, repeatedPassword) => {
+  validatePasswords: (req, res, email, password, repeatedPassword) => {
     console.log("Validating password");
     if (
       password.length >= 8 &&
@@ -107,14 +107,38 @@ module.exports = {
     }
   },
 
-  signUpUser: (req, res, userData) => {
+  signUp: (req, res, userData) => {
     console.log("Signing up the user");
-    module.exports.validatePassword(
+    module.exports.validatePasswords(
       req,
       res,
       userData.email,
       userData.password,
       userData.repetedPassword
     );
+  },
+  logIn: (req, res, email, password) => {
+    console.log("Loging in");
+    db.execute(
+      "SELECT * FROM `users` WHERE `email`=? AND `isAuthenticated` = ?",
+      [email, true]
+    )
+      .then(async (resault) => {
+        console.log("Cheking data");
+        if (await bcrypt.compare(password, resault[0][0].password)) {
+          console.log("Loged in");
+          res.cookie("authenticatedId", resault[0][0].id);
+          res.redirect("/");
+        } else {
+          console.log("Wrong password: ", password, resault[0][0].password);
+          res.redirect("/log-in");
+        }
+      })
+      .catch((err) => {
+        if (err) {
+          console.log("There was an error while loging in: ", err);
+          res.redirect("/");
+        }
+      });
   },
 };
