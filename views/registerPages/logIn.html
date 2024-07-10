@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Log in</title>
+  </head>
+  <body>
+    <div id="container">
+      <form action="/sign-up" method="post">
+        <h1>Log in</h1>
+        <div class="inputContainer">
+          <input
+            name="email"
+            type="email"
+            placeholder="Email"
+            autocomplete="email"
+            minlength="1"
+            maxlength="255"
+            required
+          />
+        </div>
+        <div class="inputContainer">
+          <input
+            name="password"
+            type="password"
+            placeholder="Password"
+            autocomplete="new-password"
+            minlength="8"
+            maxlength="255"
+            required
+          />
+        </div>
+        <button type="submit">Log in</button>
+      </form>
+    </div>
+  </body>
+</html>

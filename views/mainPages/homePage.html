@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link
+      href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/mainPageStyling.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cabin:ital,wght@0,400..700;1,400..700&display=swap"
+      rel="stylesheet"
+    />
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Home</title>
+  </head>
+  <body>
+    <header>
+      <div id="upperContainer">
+        <button>Support</button>
+        <button>Help</button>
+        <button>Bugs</button>
+        <div id="accountManagment">
+          <button class="accountManagmentButton">
+            <a href="/log-in">Log in</a>
+          </button>
+          <button class="accountManagmentButton">
+            <a href="/sign-up">Sign up</a>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div id="sideBar">
+      <div class="buttonContainer">
+        <i class="bx bx-home-alt-2"></i>
+        <button class="pageButton">Home</button>
+      </div>
+      <div class="buttonContainer">
+        <i class="bx bxs-party"></i>
+        <button class="pageButton">Activities</button>
+      </div>
+      <div class="buttonContainer">
+        <i class="bx bxs-playlist"></i>
+        <button class="pageButton">Playlists</button>
+      </div>
+      <div class="buttonContainer">
+        <i class="bx bxs-microphone-alt"></i>
+        <button class="pageButton">Voice command</button>
+      </div>
+      <h3>Server managment</h3>
+      <div id="serverList">
+        <a>No servers to manage whant to add one?</a>
+        <button id="addServerButton">Add server +</button>
+      </div>
+    </div>
+    <div id="mainContent"></div>
+  </body>
+</html>
