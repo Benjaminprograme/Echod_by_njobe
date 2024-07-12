@@ -4,88 +4,87 @@ const bcrypt = require("bcrypt");
 const saltRounds = 12;
 
 module.exports = {
-  deleteFromAuthericationCodeTable: (req, res) => {
-    db.execute("DELETE FROM `authentication_codes` WHERE `user_id` = ?", [
-      req.cookies.userId,
-    ])
-      .then((resault) => {
-        console.log("Deleting user: ", resault);
-        res.cookie("userId", "");
-        if (resault[0].affectedRowsc === 0) {
-          console.log("There is no user to delete");
-        } else {
-          res.redirect("/");
-        }
-      })
-      .catch((err) => {
-        console.log("There was an error deletnig the user: ", err);
-      });
-  },
   save: (req, res, email, password) => {
     db.execute(
-      "INSERT INTO `users` (`id`,`email`,`password`,`isAuthenticated`) VALUES (?,?,?,?)",
-      [req.cookies.userId, email, password, true]
+      "INSERT INTO users (id,email,password,isAuthenticated) VALUES (?,?,?,?)",
+      [req.session.pendingAutherication.id, email, password, true]
     )
       .then(() => {
-        res.cookie("authenticatedId", req.cookies.userId);
-        module.exports.deleteFromAuthericationCodeTable(req, res);
+        req.session.user = {
+          id: req.session.pendingAutherication.id,
+        };
+        req.session.pendingAutherication = null;
+        req.session.save((err) => {
+          if (err) {
+            console.log("Error saving session:", err);
+            res.redirect("/sign-up");
+          } else {
+            res.redirect("/");
+          }
+        });
       })
       .catch((err) => {
-        if (err) {
-          console.log("There was an erro during saving the user: ", err);
-          module.exports.deleteFromAuthericationCodeTable(req, res);
-        }
+        console.log("Error during saving the user:", err);
+        res.redirect("/sign-up");
       });
   },
+
   verifyAuthenticationCode: (req, res, authenticationCode) => {
-    db.execute(
-      "SELECT * FROM `authentication_codes` WHERE `authentication_code` = ? AND `user_id` = ?",
-      [authenticationCode, req.cookies.userId]
-    )
-      .then((resault) => {
-        console.log("Verifiying autherication code");
-        if (resault[0][0] === undefined) {
-          module.exports.deleteFromAuthericationCodeTable(req, res);
-        } else {
-          module.exports.save(
-            req,
-            res,
-            resault[0][0].email,
-            resault[0][0].password
-          );
-        }
-      })
-      .catch((err) => {
-        if (err) {
-          console.log(
-            "There was an erorr while verifying the autherication code: ",
-            err
-          );
-        }
-      });
+    try {
+      if (
+        req.session.pendingAutherication &&
+        req.session.pendingAutherication.authenticationCode ===
+          authenticationCode
+      ) {
+        module.exports.save(
+          req,
+          res,
+          req.session.pendingAutherication.email,
+          req.session.pendingAutherication.password
+        );
+      } else {
+        res.redirect("/sign-up");
+      }
+    } catch (err) {
+      console.log("Error during verification:", err);
+      res.redirect("/");
+    }
   },
+
   generateAuthenticationCode: async (req, res, email, password) => {
     const hashedPassword = await bcrypt.hash(password, saltRounds);
-    const userId = await uniqId();
-    const authenticationCode = await uniqId.time();
-
-    db.execute(
-      "INSERT INTO `authentication_codes` (`user_id`, `email`, `password`, `authentication_code`) VALUES (?, ?, ?, ?)",
-      [userId, email, hashedPassword, authenticationCode]
-    )
-      .then(() => {
-        console.log("Saving data in to autherication_codes");
-        res.cookie("userId", userId);
-        res.redirect("/sign-up/authentication");
-      })
-      .catch((err) => {
-        if (err) {
-          res.cookie("authenticatedId", "");
-          res.cookie("userId", "");
-          console.log("Error was founde during sign up: ", err);
-          res.redirect("/sign-up");
+    const userId = uniqId();
+    const authenticationCode = uniqId.time();
+    try {
+      db.execute("SELECT * FROM `users` WHERE `email` = ?", [email]).then(
+        (resault) => {
+          console.log(resault[0].length);
+          if (resault[0].length === 0) {
+            req.session.pendingAutherication = {
+              id: userId,
+              email: email,
+              password: hashedPassword,
+              authenticationCode: authenticationCode,
+            };
+            req.session.save((err) => {
+              if (err) {
+                console.log("Error saving session:", err);
+                res.redirect("/sign-up");
+              } else {
+                res.redirect("/sign-up/authentication");
+              }
+            });
+          } else {
+            res.redirect("/sign-up");
+          }
         }
+      );
+    } catch (err) {
+      console.log("Error during generating authentication code:", err);
+      req.session.destroy(() => {
+        res.redirect("/sign-up");
       });
+    }
   },
 
   validatePasswords: (req, res, email, password, repeatedPassword) => {
@@ -100,14 +99,21 @@ module.exports = {
       console.log("Password is valid");
       module.exports.generateAuthenticationCode(req, res, email, password);
     } else {
-      res.cookie("authenticatedId", "");
-      res.cookie("userId", "");
-      console.log("Password is not valid:", password, repeatedPassword);
-      res.redirect("/sign-up");
+      req.session.user = null;
+      req.session.save((err) => {
+        if (err) {
+          console.log("Error saving session:", err);
+        }
+        console.log("Password is not valid:", password, repeatedPassword);
+        res.redirect("/sign-up");
+      });
     }
   },
 
   signUp: (req, res, userData) => {
+    db.execute("SELECT * FROM `sessions`").then((resault) => {
+      console.log(resault);
+    });
     console.log("Signing up the user");
     module.exports.validatePasswords(
       req,
@@ -117,28 +123,29 @@ module.exports = {
       userData.repetedPassword
     );
   },
+
   logIn: (req, res, email, password) => {
-    console.log("Loging in");
-    db.execute(
-      "SELECT * FROM `users` WHERE `email`=? AND `isAuthenticated` = ?",
-      [email, true]
-    )
+    console.log("Logging in");
+    db.execute("SELECT * FROM users WHERE email=? AND isAuthenticated = ?", [
+      email,
+      true,
+    ])
       .then(async (resault) => {
-        console.log("Cheking data");
+        console.log("Checking data");
         if (await bcrypt.compare(password, resault[0][0].password)) {
-          console.log("Loged in");
-          res.cookie("authenticatedId", resault[0][0].id);
+          console.log("Logged in");
+          req.session.user = {
+            id: resault[0][0].id,
+          };
           res.redirect("/");
         } else {
-          console.log("Wrong password: ", password, resault[0][0].password);
+          console.log("Wrong password:", password, resault[0][0].password);
           res.redirect("/log-in");
         }
       })
       .catch((err) => {
-        if (err) {
-          console.log("There was an error while loging in: ", err);
-          res.redirect("/");
-        }
+        console.log("Error during login:", err);
+        res.redirect("/");
       });
   },
 };

@@ -5,8 +5,7 @@ const rootDir = require("../../utils/rootDir");
 const userController = require("../../controllers/user");
 
 router.get("/log-in", (req, res, next) => {
-  res.cookie("authenticatedId", "");
-  res.cookie("userId", "");
+  req.session.destroy();
   res.sendFile(path.join(rootDir, "views", "registerPages", "logIn.html"));
 });
 

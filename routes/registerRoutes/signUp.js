@@ -27,6 +27,7 @@ router.post("/sign-up", (req, res, next) => {
 });
 
 router.get("/sign-up", (req, res, next) => {
+  req.session.destroy();
   res.sendFile(path.join(rootDir, "views", "registerPages", "signUp.html"));
 });
 
